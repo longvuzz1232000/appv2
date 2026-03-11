@@ -1,0 +1,1723 @@
+<!DOCTYPE html> 
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bảng Điều Khiển Công Nghệ</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto:wght@300;400&display=swap');
+
+        :root {
+            --primary-color: #00f3ff;
+            --accent-color: #ff0055;
+            --bg-color: #050505;
+            --card-bg: rgba(255, 255, 255, 0.03);
+            --border-color: rgba(0, 243, 255, 0.3);
+            --text-color: #ffffff;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            font-family: 'Roboto', sans-serif;
+            color: var(--text-color);
+            margin: 0;
+            padding: 10px;
+            min-height: 100vh;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-sizing: border-box;
+        }
+
+        #particle-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+
+        #matrix-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.15;
+        }
+
+        #tech-bg-layer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -2;
+            background: 
+                linear-gradient(rgba(0, 243, 255, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 243, 255, 0.1) 1px, transparent 1px);
+            background-size: 40px 40px;
+            transform: perspective(500px) rotateX(60deg) scale(2) translateY(-100px);
+            animation: grid-move 10s linear infinite;
+            opacity: 0.4;
+        }
+        @keyframes grid-move {
+            0% { background-position: 0 0; }
+            100% { background-position: 0 40px; }
+        }
+
+        .panel-container {
+            position: relative;
+            width: 100%;
+            max-width: 500px;
+            padding: 15px;
+            box-sizing: border-box;
+            background: 
+                linear-gradient(rgba(10, 15, 25, 0.95), rgba(10, 15, 25, 0.95)),
+                repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0, 243, 255, 0.03) 10px, rgba(0, 243, 255, 0.03) 12px),
+                repeating-linear-gradient(-45deg, transparent, transparent 10px, rgba(0, 243, 255, 0.03) 10px, rgba(0, 243, 255, 0.03) 12px);
+            border: 2px solid var(--primary-color);
+            border-radius: 0;
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.1), inset 0 0 30px rgba(0, 243, 255, 0.05);
+            display: flex;
+            flex-direction: column;
+            overflow: visible;
+        }
+        
+        .panel-content {
+            max-height: 90vh;
+            overflow-y: auto;
+            padding-right: 5px;
+            scrollbar-width: none;
+        }
+        .panel-content::-webkit-scrollbar {
+            display: none;
+        }
+
+        .corner-decoration {
+            position: absolute;
+            width: 35px;
+            height: 35px;
+            border-color: var(--primary-color);
+            border-style: solid;
+            z-index: 10;
+            pointer-events: none;
+        }
+        
+        .corner-top-left {
+            top: -2px; left: -2px;
+            border-width: 5px 0 0 5px;
+        }
+        .corner-top-right {
+            top: -2px; right: -2px;
+            border-width: 5px 5px 0 0;
+        }
+        .corner-bottom-left {
+            bottom: -2px; left: -2px;
+            border-width: 0 0 5px 5px;
+        }
+        .corner-bottom-right {
+            bottom: -2px; right: -2px;
+            border-width: 0 5px 5px 0;
+        }
+
+        .corner-decoration::after {
+            content: '';
+            position: absolute;
+            width: 15px;
+            height: 15px;
+            border-color: var(--primary-color);
+            border-style: solid;
+            opacity: 0.6;
+        }
+        .corner-top-left::after { top: 5px; left: 5px; border-width: 2px 0 0 2px; }
+        .corner-top-right::after { top: 5px; right: 5px; border-width: 2px 2px 0 0; }
+        .corner-bottom-left::after { bottom: 5px; left: 5px; border-width: 0 0 2px 2px; }
+        .corner-bottom-right::after { bottom: 5px; right: 5px; border-width: 0 2px 2px 0; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .panel-header {
+            text-align: center;
+            margin-bottom: 20px;
+            margin-top: 10px;
+        }
+
+        .panel-header h1 {
+            font-family: 'Orbitron', sans-serif;
+            color: var(--primary-color);
+            font-size: 22px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 0 0 10px var(--primary-color);
+            margin: 0;
+        }
+
+        .panel-header .status-online {
+            color: #00ff7f;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.5; }
+            50% { opacity: 1; }
+            100% { opacity: 0.5; }
+        }
+
+        .module {
+            margin-bottom: 20px;
+        }
+
+        .module-title {
+            font-family: 'Orbitron', sans-serif;
+            color: #fff;
+            font-size: 14px;
+            margin-bottom: 10px;
+            opacity: 0.8;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-left: 3px solid var(--primary-color);
+            padding-left: 10px;
+        }
+
+        .performance-chart-container {
+            position: relative;
+            height: 150px;
+            background: rgba(0, 20, 0, 0.3);
+            border: 1px solid rgba(0, 255, 0, 0.3);
+            border-radius: 8px;
+            padding: 10px;
+            box-shadow: inset 0 0 20px rgba(0, 255, 0, 0.1);
+        }
+        #performance-chart-canvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        .controls-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+        }
+
+        .function-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 20px -5px rgba(0, 243, 255, 0.3), inset 0 -2px 0 var(--primary-color);
+        }
+
+        .function-card:hover {
+            background: rgba(0, 243, 255, 0.1);
+            box-shadow: 0 15px 30px -5px rgba(0, 243, 255, 0.6), inset 0 -2px 0 var(--accent-color);
+            border-color: var(--primary-color);
+            transform: translateY(-2px);
+        }
+
+        .function-label {
+            font-weight: 500;
+            font-size: 15px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 26px;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255,255,255,0.1);
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: var(--accent-color);
+            box-shadow: 0 0 10px var(--accent-color);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+
+        .social-links {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+        }
+
+        .social-icon {
+            color: var(--text-color);
+            font-size: 32px;
+            transition: color 0.3s, transform 0.3s;
+        }
+
+        .social-icon:hover {
+            color: var(--primary-color);
+            transform: scale(1.2);
+            text-shadow: 0 0 15px var(--primary-color);
+        }
+
+        .advanced-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .adv-card {
+            background: rgba(0, 20, 40, 0.5);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+            box-shadow: 0 8px 20px -5px rgba(0, 243, 255, 0.3), inset 0 -2px 0 var(--primary-color);
+            transition: all 0.3s ease;
+        }
+        .adv-card:hover {
+            box-shadow: 0 15px 30px -5px rgba(0, 243, 255, 0.6), inset 0 -2px 0 var(--accent-color);
+            border-color: var(--primary-color);
+        }
+        .adv-card h3 {
+            font-size: 11px;
+            color: var(--primary-color);
+            margin: 0 0 8px 0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .sub-options {
+            display: flex;
+            justify-content: space-between;
+            gap: 5px;
+        }
+        .sub-btn {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            color: #aaa;
+            font-size: 9px;
+            padding: 6px 0;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: 'Orbitron', sans-serif;
+        }
+        .sub-btn:hover {
+            background: rgba(0, 243, 255, 0.2);
+            color: #fff;
+        }
+        .sub-btn.active {
+            background: var(--primary-color);
+            color: #000;
+            box-shadow: 0 0 8px var(--primary-color);
+            font-weight: bold;
+            border-color: var(--primary-color);
+        }
+
+        .open-game-btn {
+            opacity: 0.3;
+            pointer-events: none;
+            filter: grayscale(100%);
+        }
+        .open-game-btn.active {
+            opacity: 1;
+            pointer-events: auto;
+            filter: grayscale(0%);
+            box-shadow: 0 0 15px var(--primary-color);
+        }
+
+        .module.locked {
+            opacity: 0.3;
+            pointer-events: none;
+            filter: grayscale(100%) blur(1px);
+            transition: all 0.5s ease;
+        }
+        .module.unlocked {
+            opacity: 1;
+            pointer-events: auto;
+            filter: none;
+        }
+
+        #open-game-modal {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85);
+            display: flex; justify-content: center; align-items: center;
+            z-index: 9999;
+            opacity: 0; visibility: hidden;
+            transition: all 0.3s;
+            backdrop-filter: blur(8px);
+        }
+        #open-game-modal.active {
+            opacity: 1; visibility: visible;
+        }
+        .modal-content {
+            background: linear-gradient(180deg, rgba(20, 0, 0, 0.95), rgba(0, 0, 0, 0.98));
+            border: 3px solid #ff0000;
+            padding: 40px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 0 60px rgba(255, 0, 0, 0.6), inset 0 0 30px rgba(255, 0, 0, 0.4);
+            transform: scale(0.8);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            max-width: 90%;
+        }
+        #open-game-modal.active .modal-content {
+            transform: scale(1);
+        }
+        .modal-content::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; height: 5px;
+            background: repeating-linear-gradient(45deg, #ff0000, #ff0000 10px, transparent 10px, transparent 20px);
+            animation: warning-stripes 1s linear infinite;
+        }
+        .modal-content::after {
+            content: '';
+            position: absolute;
+            bottom: 0; left: 0; right: 0; height: 5px;
+            background: repeating-linear-gradient(45deg, #ff0000, #ff0000 10px, transparent 10px, transparent 20px);
+            animation: warning-stripes 1s linear infinite;
+        }
+        @keyframes warning-stripes {
+            from { background-position: 0 0; }
+            to { background-position: 40px 0; }
+        }
+
+        .modal-title {
+            font-family: 'Orbitron', sans-serif;
+            color: #ff0000;
+            font-size: 28px;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            text-shadow: 0 0 15px #ff0000;
+            font-weight: 900;
+            letter-spacing: 2px;
+        }
+        .modal-btn {
+            background: linear-gradient(90deg, #cc0000, #ff3333);
+            color: #fff;
+            border: 1px solid #ff6666;
+            padding: 15px 50px;
+            font-size: 20px;
+            font-weight: bold;
+            font-family: 'Orbitron', sans-serif;
+            cursor: pointer;
+            border-radius: 5px;
+            box-shadow: 0 0 20px rgba(255, 0, 0, 0.5);
+            animation: pulse-btn 0.5s infinite alternate;
+            text-decoration: none;
+            display: inline-block;
+        }
+        @keyframes pulse-btn {
+            0% { box-shadow: 0 0 10px #ff0000; transform: scale(1); }
+            100% { box-shadow: 0 0 30px #ff0000; transform: scale(1.05); }
+        }
+
+        .file-upload input[type="file"] {
+            display: none;
+        }
+
+        .file-upload-label {
+            background-color: transparent;
+            color: var(--primary-color);
+            border: 2px dashed var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            display: block;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .tech-input {
+            width: 100%;
+            padding: 10px;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            color: var(--primary-color);
+            font-family: 'Orbitron', sans-serif;
+            box-sizing: border-box;
+            margin-bottom: 10px;
+        }
+        .tech-input::placeholder {
+            color: rgba(0, 243, 255, 0.4);
+        }
+
+        .tech-btn {
+            width: auto;
+            display: inline-block;
+            margin-top: 15px;
+            padding: 12px 30px;
+            background: linear-gradient(90deg, #0088aa, var(--primary-color));
+            border: none;
+            border-radius: 5px;
+            color: #000;
+            font-weight: bold;
+            font-family: 'Orbitron', sans-serif;
+            cursor: pointer;
+            box-shadow: 0 0 10px var(--primary-color);
+            transition: all 0.3s;
+        }
+        .tech-btn:hover {
+            transform: scale(1.02);
+            box-shadow: 0 0 20px var(--primary-color);
+            color: #fff;
+        }
+        .tech-btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            filter: grayscale(0.5);
+        }
+
+        #launch-btn-container {
+            text-align: center;
+        }
+
+        .file-upload-label:hover {
+            background-color: rgba(0, 255, 255, 0.1);
+            color: white;
+        }
+
+        .file-upload-label i {
+            margin-right: 10px;
+        }
+
+        #main-file-display {
+            text-align: center;
+            padding: 15px;
+            border: 1px solid var(--border-color);
+            background: rgba(0,0,0,0.2);
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+        #upload-new-btn {
+            display: inline-block;
+            font-size: 12px;
+            color: var(--primary-color);
+            border: 1px solid var(--primary-color);
+            padding: 5px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: rgba(0, 243, 255, 0.1);
+        }
+        #upload-new-btn:hover {
+             background: var(--primary-color);
+             color: #000;
+        }
+
+        .activation-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px 0;
+        }
+        .reactor-container {
+            position: relative;
+            width: 120px;
+            height: 120px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            margin-bottom: 25px;
+        }
+        .reactor-outer-ring {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border: 2px solid transparent;
+            border-top: 4px solid var(--primary-color);
+            border-bottom: 4px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 6s linear infinite;
+            box-shadow: 0 0 15px var(--primary-color);
+        }
+        .reactor-inner-ring {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            margin: auto;
+            width: 70%;
+            height: 70%;
+            border: 2px solid transparent;
+            border-left: 4px solid var(--accent-color);
+            border-right: 4px solid var(--accent-color);
+            border-radius: 50%;
+            animation: spin-reverse 3s linear infinite;
+        }
+        .reactor-core {
+            width: 40%;
+            height: 40%;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #fff;
+            font-size: 24px;
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.3);
+            transition: all 0.3s;
+            border: 1px solid rgba(255,255,255,0.2);
+            overflow: hidden;
+            position: relative;
+        }
+        .reactor-core::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            margin: auto;
+            width: 70%; height: 70%;
+            border-radius: 50%;
+            border: 3px solid transparent;
+            border-top: 3px solid #00f3ff;
+            border-right: 3px solid rgba(0, 243, 255, 0.5);
+            box-shadow: 0 0 10px #00f3ff;
+            animation: spin 1s linear infinite;
+            transition: all 0.3s;
+        }
+        .reactor-core i {
+            position: relative; z-index: 2;
+        }
+        .reactor-container:hover .reactor-core {
+            background: var(--primary-color);
+            box-shadow: 0 0 40px var(--primary-color);
+            color: #000;
+            transform: scale(1.1);
+        }
+        .reactor-container.active .reactor-outer-ring {
+            animation: spin 0.5s linear infinite;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 30px var(--accent-color);
+        }
+        .reactor-container.active .reactor-inner-ring {
+            animation: spin-reverse 0.3s linear infinite;
+            border-color: #fff;
+        }
+        .reactor-container.active .reactor-core {
+            background: #fff;
+            color: var(--accent-color);
+            box-shadow: 0 0 60px #fff;
+            animation: pulse-core 0.2s infinite alternate;
+        }
+        .reactor-container.active .reactor-core::before {
+            animation: none;
+            border: none;
+            background: conic-gradient(var(--primary-color) var(--progress, 0%), transparent 0%);
+            -webkit-mask: radial-gradient(transparent 60%, black 65%);
+            mask: radial-gradient(transparent 60%, black 65%);
+            transform: rotate(-90deg);
+            box-shadow: 0 0 20px var(--primary-color);
+        }
+        .reactor-container.finished .reactor-outer-ring {
+            border-color: #00ff7f;
+            box-shadow: 0 0 15px #00ff7f;
+        }
+        .reactor-container.finished .reactor-inner-ring {
+            border-color: #00ff7f;
+        }
+        .reactor-container.finished .reactor-core {
+            border-color: #00ff7f;
+            color: #00ff7f;
+            box-shadow: 0 0 30px #00ff7f;
+        }
+        .activation-info {
+            width: 100%;
+            text-align: center;
+        }
+        #activation-text {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 12px;
+            color: var(--primary-color);
+            margin-bottom: 8px;
+            height: 15px;
+            letter-spacing: 2px;
+            text-shadow: 0 0 5px var(--primary-color);
+        }
+
+        .notification {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(20, 0, 0, 0.95);
+            color: #ff3333;
+            border: 1px solid #ff3333;
+            border-left: 5px solid #ff3333;
+            padding: 15px 30px;
+            border-radius: 2px;
+            box-shadow: 0 0 30px rgba(255, 0, 0, 0.4);
+            font-family: 'Orbitron', sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 12px;
+            font-weight: bold;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.5s, visibility 0.5s;
+            z-index: 1000;
+        }
+
+        .notification::before {
+            content: '⚠ SYSTEM ALERT: ';
+            color: #fff;
+            margin-right: 5px;
+        }
+
+        .notification.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        #preloader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(ellipse at center, rgba(48, 10, 80, 0.3) 0%, #0a0211 70%);
+            z-index: 10000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Orbitron', sans-serif;
+            transition: opacity 0.8s ease, visibility 0.8s ease;
+            overflow: hidden;
+        }
+
+        #preloader.loaded {
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        .preloader-container {
+            text-align: center;
+        }
+
+        .preloader-brand {
+            font-size: 24px;
+            font-weight: 700;
+            color: #d070ff;
+            text-shadow: 0 0 10px #d070ff;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .preloader-hud {
+            position: relative;
+            width: 200px;
+            height: 200px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0 auto;
+        }
+
+        .hud-ring {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            margin: auto;
+            border-radius: 50%;
+            border-style: solid;
+            border-color: rgba(208, 112, 255, 0.3);
+        }
+
+        .hud-ring.ring-1 {
+            width: 100%;
+            height: 100%;
+            border-width: 2px;
+            border-style: dashed;
+            animation: spin 20s linear infinite;
+        }
+
+        .hud-ring.ring-2 {
+            width: 85%;
+            height: 85%;
+            border-width: 4px;
+            border-top-color: #ff00e0;
+            border-bottom-color: #ff00e0;
+            animation: spin-reverse 8s linear infinite;
+        }
+
+        .hud-ring.ring-3 {
+            width: 70%;
+            height: 70%;
+            border-width: 2px;
+            border-left-color: #00f3ff;
+            border-right-color: #00f3ff;
+            animation: spin 5s linear infinite;
+        }
+
+        .hud-center {
+            width: 55%;
+            height: 55%;
+            background: rgba(208, 112, 255, 0.05);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 40px;
+            font-weight: 700;
+            color: #fff;
+            text-shadow: 0 0 10px #fff;
+            border: 1px solid rgba(208, 112, 255, 0.5);
+            box-shadow: inset 0 0 20px rgba(208, 112, 255, 0.2);
+        }
+
+        .hud-center span {
+            margin-right: 2px;
+        }
+
+        .preloader-log {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            width: 350px;
+            max-width: 90%;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            color: #00ff7f;
+            text-shadow: 0 0 5px #00ff7f;
+            text-align: left;
+        }
+
+        .preloader-log p {
+            margin: 0 0 5px 0;
+            white-space: nowrap;
+            overflow: hidden;
+            opacity: 0;
+            animation: log-line-appear 0.3s forwards;
+        }
+
+        @keyframes log-line-appear {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        @keyframes spin-reverse {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(-360deg); }
+        }
+
+        .module.reveal {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+        }
+
+        .module.reveal.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        @media (max-width: 600px) {
+            body { padding: 10px; }
+            .panel-container { padding: 15px; width: 100%; }
+            .panel-header h1 { font-size: 20px; }
+            .modal-content { width: 95%; padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="preloader">
+        <div class="preloader-container">
+            <div class="preloader-brand">Oreki.cute</div>
+            <div class="preloader-hud">
+                <div class="hud-ring ring-1"></div>
+                <div class="hud-ring ring-2"></div>
+                <div class="hud-ring ring-3"></div>
+                <div class="hud-center">
+                    <span id="preloader-percentage">0</span>%
+                </div>
+            </div>
+        </div>
+        <div class="preloader-log" id="preloader-log-container">
+        </div>
+    </div>
+
+    <canvas id="particle-canvas"></canvas>
+    <canvas id="matrix-canvas"></canvas>
+    <div id="tech-bg-layer"></div>
+
+    <div id="open-game-modal">
+        <div class="modal-content">
+            <div style="font-size: 50px; color: #ff0000; margin-bottom: 10px;"><i class="fa-solid fa-triangle-exclamation"></i></div>
+            <div class="modal-title">CẢNH BÁO HỆ THỐNG</div>
+            <p style="color: #fff; margin-bottom: 20px; font-family: 'Roboto', sans-serif;">XÁC NHẬN TRUY CẬP VÀO TRÒ CHƠI?</p>
+            <a href="#" id="modal-open-btn" class="modal-btn">OPEN GAME</a>
+        </div>
+    </div>
+
+    <div class="panel-container">
+      <div class="corner-decoration corner-top-left"></div>
+      <div class="corner-decoration corner-top-right"></div>
+      <div class="corner-decoration corner-bottom-left"></div>
+      <div class="corner-decoration corner-bottom-right"></div>
+
+      <div class="panel-content">
+        <header class="panel-header">
+            <h1>TRUNG TÂM CHỈ HUY TÁC CHIẾN</h1>
+            <p>Trạng thái: <span class="status-online">● Online</span></p>
+        </header>
+
+        <section class="module reveal" id="file-module">
+            <h2 class="module-title">Khởi chạy Tác vụ</h2>
+            <div class="file-upload">
+                <label for="file-input" id="initial-upload-label" class="file-upload-label" title="Chọn các tệp cấu hình.">
+                    <i class="fa-solid fa-folder-open"></i> Chọn Tệp Dữ Liệu (Amlok)
+                </label>
+                <input type="file" id="file-input" multiple style="display: none;">
+
+                <div id="selected-file-container" style="display:none; text-align: center;">
+                    <div id="main-file-display">
+                        <div id="main-file-name" style="font-weight: bold; color: var(--accent-color); font-size: 16px; word-break: break-all;"></div>
+                    </div>
+                    <label for="file-input" id="upload-new-btn">+ Upload File New</label>
+                </div>
+
+                <div id="file-list" style="margin-top: 10px; font-size: 12px; color: #aaa; max-height: 80px; overflow-y: auto; text-align: left; padding: 5px;"></div>
+
+                <div id="launch-btn-container" style="display:none;"><button id="launch-btn" class="tech-btn">KHỞI CHẠY AMLOK_CHINA</button></div>
+                
+                <div id="analysis-log" style="display:none; margin-top: 15px; background: rgba(0,0,0,0.8); padding: 10px; border-radius: 5px; font-family: 'Courier New', monospace; font-size: 11px; color: #0f0; text-align: left; height: 120px; overflow-y: auto; border: 1px solid #00ff00;"></div>
+            </div>
+        </section>
+
+        <section class="module locked reveal" id="function-module"> 
+            <h2 class="module-title">Mô-đun Chức Năng</h2>
+            <div class="controls-grid">
+                <div class="function-card">
+                    <span class="function-label"><i class="fa-solid fa-shield-halved"></i> Tường Lửa Nâng Cao</span>
+                    <label class="switch" title="Bảo vệ hệ thống khỏi các mối đe dọa từ mạng.">
+                        <input type="checkbox" id="shield-toggle">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                
+                <div class="function-card">
+                    <span class="function-label"><i class="fa-solid fa-bolt"></i> Tăng Tốc Hệ Thống</span>
+                    <label class="switch" title="Tối ưu hóa RAM và CPU để đạt hiệu suất cao nhất.">
+                        <input type="checkbox" id="boost-toggle">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div class="function-card">
+                    <span class="function-label"><i class="fa-solid fa-globe"></i> Config: Amlok China</span>
+                    <label class="switch" title="Mô phỏng bật/tắt cấu hình VPN trên thiết bị.">
+                        <input type="checkbox" id="vpn-toggle">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div class="function-card">
+                    <span class="function-label"><i class="fa-solid fa-user-secret"></i> Ẩn Danh Lượng Tử</span>
+                    <label class="switch" title="Ẩn lưu lượng mạng bằng giao thức lượng tử.">
+                        <input type="checkbox" id="stealth-toggle">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div class="function-card">
+                    <span class="function-label"><i class="fa-solid fa-atom"></i> Lõi Năng Lượng Phụ</span>
+                    <label class="switch" title="Kích hoạt lõi năng lượng dự phòng để tăng cường xử lý.">
+                        <input type="checkbox" id="power-core-toggle">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+        </section>
+
+        <section class="module reveal">
+            <h2 class="module-title">Giám Sát Sinh Trắc Thiết Bị</h2>
+            <div class="performance-chart-container">
+                <canvas id="performance-chart-canvas"></canvas>
+            </div>
+        </section>
+
+        <section class="module locked reveal" id="activation-module">
+            <h2 class="module-title">Kích Hoạt Lõi Hệ Thống</h2>
+            <div class="activation-wrapper">
+                <div class="reactor-container" id="reactor-btn" title="Nhấn để kích hoạt">
+                    <div class="reactor-outer-ring"></div>
+                    <div class="reactor-inner-ring"></div>
+                    <div class="reactor-core">
+                        <i class="fa-solid fa-power-off"></i>
+                    </div>
+                </div>
+                <div class="activation-info">
+                    <div id="activation-text">HỆ THỐNG ĐANG CHỜ...</div>
+                    <div class="tech-progress-bg">
+                        <div class="tech-progress-bar" id="tech-progress"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="module locked reveal" id="tactical-module">
+            <h2 class="module-title">Cấu Hình Chiến Thuật</h2>
+            <div class="advanced-grid">
+                <div class="adv-card">
+                    <h3>Chế Độ CPU</h3>
+                    <div class="sub-options">
+                        <button class="sub-btn">Eco</button>
+                        <button class="sub-btn active">Bal</button>
+                        <button class="sub-btn">Max</button>
+                    </div>
+                </div>
+                <div class="adv-card">
+                    <h3>Độ Nhạy Cảm Ứng</h3>
+                    <div class="sub-options">
+                        <button class="sub-btn">Low</button>
+                        <button class="sub-btn active">Mid</button>
+                        <button class="sub-btn">High</button>
+                    </div>
+                </div>
+                <div class="adv-card">
+                    <h3>Khóa FPS</h3>
+                    <div class="sub-options">
+                        <button class="sub-btn">60</button>
+                        <button class="sub-btn">90</button>
+                        <button class="sub-btn active">120</button>
+                    </div>
+                </div>
+                <div class="adv-card">
+                    <h3>Đồ Họa</h3>
+                    <div class="sub-options">
+                        <button class="sub-btn active">Soft</button>
+                        <button class="sub-btn">HD</button>
+                        <button class="sub-btn">HDR</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="module locked reveal" id="game-module">
+            <h2 class="module-title">Kích Hoạt Game</h2>
+            <div class="controls-grid">
+                <div class="function-card" id="ff-th-card">
+                    <span class="function-label"><i class="fa-solid fa-gamepad"></i> Free Fire Thường</span>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <label class="switch" title="Apply Amlok China cho Free Fire TH">
+                            <input type="checkbox" id="ff-th-toggle">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+                <div class="function-card" id="ff-max-card">
+                    <span class="function-label"><i class="fa-solid fa-fire"></i> Free Fire Max</span>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <label class="switch" title="Apply Amlok China cho Free Fire Max">
+                            <input type="checkbox" id="ff-max-toggle">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="module reveal">
+            <h2 class="module-title">Kênh Liên Lạc</h2>
+            <div class="social-links">
+                <a href="https://m.me/NHAP_LINK_MESSENGER_TAI_DAY" target="_blank" class="social-icon" aria-label="Messenger"><i class="fab fa-facebook-messenger"></i></a>
+                <a href="https://zalo.me/NHAP_SO_ZALO_TAI_DAY" target="_blank" class="social-icon" aria-label="Zalo"><i class="fa-solid fa-comment-dots"></i></a>
+                <a href="https://t.me/NHAP_USER_TELEGRAM_TAI_DAY" target="_blank" class="social-icon" aria-label="Telegram"><i class="fab fa-telegram"></i></a>
+                <a href="https://www.tiktok.com/@NHAP_ID_TIKTOK_TAI_DAY" target="_blank" class="social-icon" aria-label="TikTok"><i class="fab fa-tiktok"></i></a>
+            </div>
+        </section>
+
+        <div id="notification" class="notification"></div>
+      </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+
+            const preloader = document.getElementById('preloader');
+            const logContainer = document.getElementById('preloader-log-container');
+
+            const logMessages = [
+                "Booting Oreki.cute OS v3.0...",
+                "Kernel module: amlok_china_core.sys [OK]",
+                "Memory check: 32GB LPDDR5X... [PASSED]",
+                "Initializing display: 120Hz... [OK]",
+                "Loading GPU drivers: Mali-G57... [OK]",
+                "Calibrating quantum sensors... [DONE]",
+                "Establishing secure uplink... [CONNECTED]",
+                "Verifying user signature... [AUTHORIZED]",
+                "Loading UI components...",
+                "Finalizing boot sequence...",
+            ];
+
+            let logIndex = 0;
+            let logInterval;
+
+            setTimeout(() => {
+                logInterval = setInterval(() => {
+                    if (logIndex < logMessages.length) {
+                        const p = document.createElement('p');
+                        p.textContent = `> ${logMessages[logIndex]}`;
+                        logContainer.appendChild(p);
+                        
+                        logContainer.scrollTop = logContainer.scrollHeight;
+
+                        if (logContainer.children.length > 6) {
+                            logContainer.removeChild(logContainer.firstChild);
+                        }
+
+                        logIndex++;
+                    } else {
+                        clearInterval(logInterval);
+                        const p = document.createElement('p');
+                        p.style.color = '#00f3ff';
+                        p.textContent = 'SYSTEM ONLINE. ACCESS GRANTED.';
+                        logContainer.appendChild(p);
+                        logContainer.scrollTop = logContainer.scrollHeight;
+                    }
+                }, 300);
+            }, 1500);
+
+            const totalDuration = 5500; 
+
+            setTimeout(() => {
+                preloader.classList.add('loaded');
+            }, totalDuration);
+
+            const panelContent = document.querySelector('.panel-content');
+            const revealElements = document.querySelectorAll('.module.reveal');
+
+            const revealObserver = new IntersectionObserver((entries, observer) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('visible');
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, {
+                root: panelContent,
+                rootMargin: '0px',
+                threshold: 0.1
+            });
+
+            revealElements.forEach(el => {
+                revealObserver.observe(el);
+            });
+            
+            const matrixCanvas = document.getElementById('matrix-canvas');
+            const matrixCtx = matrixCanvas.getContext('2d');
+            
+            function resizeMatrix() {
+                matrixCanvas.width = window.innerWidth;
+                matrixCanvas.height = window.innerHeight;
+            }
+            resizeMatrix();
+            window.addEventListener('resize', resizeMatrix);
+
+            const chinese = '天地玄黄宇宙洪荒日月盈昃辰宿列张寒来暑往秋收冬藏闰余成岁律吕调阳云腾致雨露结为霜金生丽水玉出昆冈剑号巨阙珠称夜光果珍李柰菜重芥姜海咸河淡鳞潜羽翔龙师火帝鸟官人皇';
+            const alphabet = chinese;
+
+            const fontSize = 14;
+            const columns = matrixCanvas.width / fontSize;
+
+            const rainDrops = [];
+            for(let x = 0; x < columns; x++) {
+                rainDrops[x] = 1;
+            }
+
+            function drawMatrix() {
+                matrixCtx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+                matrixCtx.fillRect(0, 0, matrixCanvas.width, matrixCanvas.height);
+
+                matrixCtx.fillStyle = '#0F0';
+                matrixCtx.font = fontSize + 'px monospace';
+
+                for(let i = 0; i < rainDrops.length; i++) {
+                    const text = alphabet.charAt(Math.floor(Math.random() * alphabet.length));
+                    matrixCtx.fillText(text, i * fontSize, rainDrops[i] * fontSize);
+
+                    if(rainDrops[i] * fontSize > matrixCanvas.height && Math.random() > 0.975){
+                        rainDrops[i] = 0;
+                    }
+                    rainDrops[i]++;
+                }
+            }
+            setInterval(drawMatrix, 50);
+
+            const canvas = document.getElementById('particle-canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+
+            let particlesArray;
+            let mouse = {
+                x: null,
+                y: null,
+                radius: 120
+            };
+
+            window.addEventListener('mousemove', function(event) {
+                mouse.x = event.x;
+                mouse.y = event.y;
+            });
+
+            window.addEventListener('mouseout', function() {
+                mouse.x = null;
+                mouse.y = null;
+            });
+
+            class Particle {
+                constructor() {
+                    this.x = Math.random() * canvas.width;
+                    this.y = Math.random() * canvas.height;
+                    this.directionX = (Math.random() * 0.6) - 0.3;
+                    this.directionY = (Math.random() * 0.6) - 0.3;
+                    this.size = Math.random() * 2 + 1;
+                }
+                update() {
+                    if (mouse.x) {
+                        let dx = this.x - mouse.x;
+                        let dy = this.y - mouse.y;
+                        let distance = Math.sqrt(dx * dx + dy * dy);
+                        if (distance < mouse.radius) {
+                            const force = (mouse.radius - distance) / mouse.radius;
+                            this.x += dx / distance * force * 2;
+                            this.y += dy / distance * force * 2;
+                        }
+                    }
+                    if (this.x > canvas.width + this.size || this.x < -this.size) this.directionX = -this.directionX;
+                    if (this.y > canvas.height + this.size || this.y < -this.size) this.directionY = -this.directionY;
+                    this.x += this.directionX;
+                    this.y += this.directionY;
+                }
+                draw() {
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                    ctx.fillStyle = '#00f3ff';
+                    ctx.fill();
+                }
+            }
+
+            function initParticles() {
+                particlesArray = [];
+                let numberOfParticles = (canvas.height * canvas.width) / 2500;
+                for (let i = 0; i < numberOfParticles; i++) {
+                    particlesArray.push(new Particle());
+                }
+            }
+
+            function animateParticles() {
+                requestAnimationFrame(animateParticles);
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                for (let i = 0; i < particlesArray.length; i++) {
+                    particlesArray[i].update();
+                    particlesArray[i].draw();
+                    
+                    for (let j = i; j < particlesArray.length; j++) {
+                        const dx = particlesArray[i].x - particlesArray[j].x;
+                        const dy = particlesArray[i].y - particlesArray[j].y;
+                        const distance = Math.sqrt(dx*dx + dy*dy);
+                        if (distance < 100) {
+                            ctx.beginPath();
+                            ctx.strokeStyle = `rgba(0, 243, 255, ${1 - distance/100})`;
+                            ctx.lineWidth = 0.5;
+                            ctx.moveTo(particlesArray[i].x, particlesArray[i].y);
+                            ctx.lineTo(particlesArray[j].x, particlesArray[j].y);
+                            ctx.stroke();
+                        }
+                    }
+                }
+            }
+            initParticles();
+            animateParticles();
+            window.addEventListener('resize', () => {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+                initParticles();
+            });
+
+            const notification = document.getElementById('notification');
+            const toggles = document.querySelectorAll('.switch input[type="checkbox"]');
+
+            function showNotification(message) {
+                notification.textContent = message;
+                notification.classList.add('show');
+
+                setTimeout(() => {
+                    notification.classList.remove('show');
+                }, 3000);
+            }
+
+            toggles.forEach(toggle => {
+                toggle.addEventListener('change', function() {
+                    const label = this.closest('.function-card').querySelector('.function-label').textContent;                    
+                    document.getElementById('activation-module').classList.remove('locked');
+                    document.getElementById('activation-module').classList.add('unlocked');
+
+                    if (this.checked) {
+                        showNotification(`${label}: Đã bật!`);
+                    } else {
+                        showNotification(`${label}: Đã tắt.`);
+                    }
+                });
+            });
+
+            const subBtns = document.querySelectorAll('.sub-btn');
+            subBtns.forEach(btn => {
+                btn.addEventListener('click', function() {                    
+                    document.getElementById('game-module').classList.remove('locked');
+                    document.getElementById('game-module').classList.add('unlocked');
+                    const siblings = this.parentElement.querySelectorAll('.sub-btn');
+                    siblings.forEach(sib => sib.classList.remove('active'));
+                    this.classList.add('active');
+                });
+            });
+
+            const gameConfigs = [
+                { toggle: 'ff-th-toggle', url: 'intent://#Intent;scheme=android-app;package=com.dts.freefireth;end' },
+                { toggle: 'ff-max-toggle', url: 'intent://#Intent;scheme=android-app;package=com.dts.freefiremax;end' }
+            ];
+
+            const modal = document.getElementById('open-game-modal');
+            const modalBtn = document.getElementById('modal-open-btn');
+
+            gameConfigs.forEach(config => {
+                const toggleEl = document.getElementById(config.toggle);
+                if (toggleEl) {
+                    toggleEl.addEventListener('change', function() {
+                        if (this.checked) {
+                            gameConfigs.forEach(c => {
+                                if (c.toggle !== config.toggle) {
+                                    document.getElementById(c.toggle).checked = false;
+                                }
+                            });
+
+                            modalBtn.href = config.url;
+                            modal.classList.add('active');
+                        }
+                    });
+                }
+            });
+            
+            modalBtn.addEventListener('click', function() {
+                setTimeout(() => {
+                    modal.classList.remove('active');
+                }, 1000);
+            });
+
+            const fileInput = document.getElementById('file-input');
+            const initialUploadLabel = document.getElementById('initial-upload-label');
+            const selectedFileContainer = document.getElementById('selected-file-container');
+            const mainFileName = document.getElementById('main-file-name');
+            const fileList = document.getElementById('file-list');
+            const launchBtn = document.getElementById('launch-btn');
+            const analysisLog = document.getElementById('analysis-log');
+            const uploadNewBtn = document.getElementById('upload-new-btn');
+            let isSystemActive = false;
+
+            fileInput.addEventListener('change', function() {
+                const files = Array.from(this.files);
+                if (files.length === 0) {
+                    initialUploadLabel.style.display = 'block';
+                    selectedFileContainer.style.display = 'none';
+                    fileList.innerHTML = '';
+                    launchBtn.parentElement.style.display = 'none';
+                    return;
+                }
+
+                let selectedFile = null;
+                const iconTypes = ['png', 'jpg', 'jpeg', 'ico', 'svg', 'webp'];
+                selectedFile = files.find(f => iconTypes.includes(f.name.split('.').pop().toLowerCase()));
+                if (!selectedFile) {
+                    selectedFile = files.reduce((prev, current) => (prev.size > current.size) ? prev : current);
+                }
+
+                initialUploadLabel.style.display = 'none';
+                selectedFileContainer.style.display = 'block';
+                mainFileName.textContent = selectedFile.name;
+
+                fileList.innerHTML = '';
+                files.forEach(f => {
+                    const div = document.createElement('div');
+                    div.innerHTML = `<i class="fa-solid fa-check" style="color:var(--primary-color)"></i> ${f.name} <span style="float:right">${(f.size/1024).toFixed(1)} KB</span>`;
+                    fileList.appendChild(div);
+                });
+
+                launchBtn.parentElement.style.display = 'block';
+                analysisLog.style.display = 'none';
+                showNotification(`Đã nhập ${files.length} tệp tin!`);
+            });
+
+            uploadNewBtn.addEventListener('click', function() {
+                fileInput.value = '';
+                initialUploadLabel.style.display = 'block';
+                selectedFileContainer.style.display = 'none';
+                fileList.innerHTML = '';
+                launchBtn.parentElement.style.display = 'none';
+                analysisLog.style.display = 'none';
+                
+                document.querySelectorAll('.switch input[type="checkbox"]').forEach(cb => {
+                    cb.checked = false;
+                });
+
+                launchBtn.disabled = false;
+                launchBtn.innerHTML = 'KHỞI CHẠY AMLOK_CHINA';
+
+                ['function-module', 'activation-module', 'tactical-module', 'game-module'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) {
+                        el.classList.remove('unlocked');
+                        el.classList.add('locked');
+                    }
+                });
+
+                const reactorBtn = document.getElementById('reactor-btn');
+                reactorBtn.classList.remove('active', 'finished');
+                reactorBtn.style.removeProperty('--progress');
+                reactorBtn.querySelector('.reactor-core i').className = 'fa-solid fa-power-off';
+                document.getElementById('activation-text').textContent = 'HỆ THỐNG ĐANG CHỜ...';
+                document.getElementById('activation-text').style.color = 'var(--primary-color)';
+                document.getElementById('activation-text').style.textShadow = '0 0 5px var(--primary-color)';
+                document.getElementById('tech-progress').style.width = '0%';
+                isSystemActive = false;
+                
+                showNotification('Đã làm mới quy trình!');
+            });
+
+            launchBtn.addEventListener('click', function() {
+                const staticStartLogs = [
+                    "Initializing Amlok_China kernel module v2.1...",
+                    "Reading device hardware profile: [Nubia Neo 2]",
+                    "CPU architecture detected: ARMv8.2-A",
+                    "GPU detected: Mali-G57",
+                    "Memory interface: LPDDR4X @ 2133MHz",
+                    "Verifying file integrity...",
+                    ...Array.from(fileInput.files).map(f => `> Checksum for ${f.name}: OK`),
+                    "Parsing primary configuration buffer...",
+                ];
+
+                const randomLogPool = [
+                    "Found 128 optimization vectors.",
+                    "Applying vector: CPU_GOVERNOR_SCHEDUTIL_BOOST",
+                    "Applying vector: GPU_POWERLEVEL_MAX",
+                    "Applying vector: MEM_LATENCY_REDUCTION_LV3",
+                    "Injecting quantum entanglement protocol...",
+                    "Synchronizing with C-STN/01 satellite network...",
+                    "Bypassing thermal throttling service...",
+                    "WARNING: Thermal service unresponsive. Forcing override.",
+                    "Thermal override successful. Core temperature monitoring disabled.",
+                    "Flushing L1 cache...",
+                    "Flushing L2 cache...",
+                    "Reallocating memory for GPU staging buffer: +256MB",
+                    "Defragmenting primary RAM partition...",
+                    "Analyzing running processes...",
+                    " > Priority boosted: com.android.systemui -> REALTIME",
+                    " > Priority lowered: com.google.android.gms -> BACKGROUND",
+                    "Scanning for resource-hungry background tasks...",
+                    "Found 3 tasks. Terminating...",
+                    " > Task 'com.facebook.katana' terminated.",
+                    " > Task 'com.instagram.android' terminated.",
+                    " > Task 'com.whatsapp' terminated.",
+                    "Loading display driver hooks...",
+                    "Forcing display refresh rate to 120Hz...",
+                    "Locking refresh rate... Lock acquired.",
+                    "Disabling VSync to reduce input latency...",
+                    "Enabling predictive touch input module...",
+                    "Calibrating gyroscope for aim-assist subroutine...",
+                    "Calibration complete. Deviation: 0.0012deg.",
+                    "Loading network optimization stack...",
+                    "Pinging nearest data server: [HK-ALI-02]... 12ms",
+                    "Establishing low-latency data channel...",
+                    "Channel established. Protocol: QUIC/UDP",
+                    "Applying packet prioritization rules...",
+                    "Rule applied: Prioritize small UDP packets.",
+                    "Decompiling shaders for optimization...",
+                    " > Optimizing shader: Removing atmospheric scattering pass.",
+                    " > Optimizing shader: Replacing bloom with lens flare approximation.",
+                    "Recompiling shaders... OK.",
+                    "Injecting code into 'libunity.so'...",
+                    "Injection point found at offset 0x1A4F88.",
+                    "Patching function: 'Update()'",
+                    "Patch successful. Frame pacing unlocked.",
+                    "Verifying system stability...",
+                    "CPU Core 0-3 @ 2.2GHz (Stable)",
+                    "CPU Core 4-7 @ 2.7GHz (Stable)",
+                    "GPU Clock @ 950MHz (Stable)",
+                    "Memory controller voltage: 1.1V (Nominal)",
+                    "System check passed.",
+                    "Loading 'Amlok China Oreki' configuration...",
+                    " > Parameter 'no_recoil_assist' set to 1.",
+                    " > Parameter 'aim_lock_strength' set to 0.85.",
+                    " > Parameter 'render_distance_override' set to 2.0.",
+                    " > Parameter 'shadow_quality' set to 0 (Disabled).",
+                    "Configuration loaded successfully.",
+                    "Finalizing system hooks...",
+                    "Hooking into audio driver: 'libsles.so'",
+                    "Applying audio compression for footsteps...",
+                    "Hooking into input driver: 'libinput.so'",
+                    "Applying touch event smoothing...",
+                    "All hooks in place.",
+                    "Cleaning up temporary files...",
+                    "Freed 12.4MB of temporary data.",
+                    "Resetting logcat buffer...",
+                    "System analysis complete.",
+                    "Amlok_China is now running in high-performance mode.",
+                    "Monitoring system vitals...",
+                    "All systems nominal.",
+                    "Applying final layer of anti-cheat detection bypass...",
+                    "Signature hash scrambled.",
+                    "Timestamp spoofing enabled.",
+                    "Process name randomized: " + Math.random().toString(36).substring(7),
+                    "Bypass layer active.",
+                    "Memory integrity check: PASSED",
+                    "Linking to secure server...",
+                    "Downloading assets...",
+                    "Assets verified.",
+                    "Injecting hooks...",
+                    "Hooks active.",
+                    "Starting main loop...",
+                ];
+
+                const staticEndLogs = [
+                    "Preparing for application launch...",
+                    "Ready for execution."
+                ];
+
+                const shuffled = randomLogPool.sort(() => 0.5 - Math.random());
+                const selectedRandomLogs = shuffled.slice(0, 15 + Math.floor(Math.random() * 10));
+                const fakeLogs = [...staticStartLogs, ...selectedRandomLogs, ...staticEndLogs];
+
+                launchBtn.disabled = true;
+                const originalBtnText = launchBtn.textContent;
+                launchBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> PROCESSING...';
+
+                analysisLog.style.display = 'block';
+                analysisLog.innerHTML = '> Khởi tạo môi trường Amlok_China...<br>';
+                let logIndex = 0;
+                const interval = setInterval(() => {
+                    if (logIndex < fakeLogs.length) {
+                        analysisLog.innerHTML += fakeLogs[logIndex] + '<br>';
+                        logIndex++;
+                    } else {
+                        clearInterval(interval);
+                        analysisLog.innerHTML += '> <span style="color: #00f3ff; font-weight:bold;">[THÀNH CÔNG]</span> Đã kích hoạt Amlok_China.<br>';
+                        showNotification('Khởi chạy thành công!');
+                        launchBtn.disabled = false;
+                        launchBtn.textContent = originalBtnText;
+                        
+                        document.getElementById('function-module').classList.remove('locked');
+                        document.getElementById('function-module').classList.add('unlocked');
+                    }
+                    analysisLog.scrollTop = analysisLog.scrollHeight;
+                }, 25);
+            });
+            
+            const reactorBtn = document.getElementById('reactor-btn');
+            const activationText = document.getElementById('activation-text');
+            const techProgress = document.getElementById('tech-progress');
+
+            reactorBtn.addEventListener('click', () => {
+                if (isSystemActive || reactorBtn.classList.contains('finished')) return;
+                
+                isSystemActive = true;
+                reactorBtn.classList.add('active');
+
+                const steps = [
+                    "KẾT NỐI MÁY CHỦ...",
+                    "XÁC THỰC NGƯỜI DÙNG...",
+                    "INJECT GAME REAL...",
+                    "VERITIFIED NHỊ PHÂN...",
+                    "TỐI ƯU HÓA CPU...",
+                    "KÍCH HOẠT LÕI...",
+                    "HOÀN TẤT."
+                ];
+
+                let progress = 0;
+                let stepIndex = 0;
+                
+                const interval = setInterval(() => {
+                    progress += 1;
+                    techProgress.style.width = progress + '%';
+                    reactorBtn.style.setProperty('--progress', progress + '%');
+
+                    if (progress % 15 === 0 && stepIndex < steps.length) {
+                        activationText.textContent = steps[stepIndex];
+                        stepIndex++;
+                    }
+                    
+                    if (progress >= 100) {
+                        clearInterval(interval);
+                        activationText.textContent = "HỆ THỐNG ĐÃ KÍCH HOẠT";
+                        activationText.style.color = "#00ff7f";
+                        activationText.style.textShadow = "0 0 10px #00ff7f";
+
+                        reactorBtn.classList.remove('active');
+                        reactorBtn.classList.add('finished');
+
+                        reactorBtn.querySelector('.reactor-core i').className = 'fa-solid fa-check';
+
+                        document.getElementById('tactical-module').classList.remove('locked');
+                        document.getElementById('tactical-module').classList.add('unlocked');
+                        showNotification("Kích hoạt thành công! Hệ thống đã sẵn sàng.");
+                    }
+                }, 40);
+        });
+
+            const chartCtx = document.getElementById('performance-chart-canvas').getContext('2d');
+
+            const performanceChart = new Chart(chartCtx, {
+                type: 'line',
+                data: {
+                    labels: Array(100).fill(''),
+                    datasets: [{
+                        label: 'ECG',
+                        data: [],
+                        borderColor: '#00ff00',
+                        borderWidth: 2,
+                        pointRadius: 0,
+                        tension: 0.4,
+                        fill: false,
+                    }, {
+                        label: 'Line 2',
+                        data: [],
+                        borderColor: '#00f3ff',
+                        borderWidth: 2,
+                        pointRadius: 0,
+                        tension: 0.4,
+                        fill: false,
+                    }, {
+                        label: 'Line 3',
+                        data: [],
+                        borderColor: '#ff0055',
+                        borderWidth: 2,
+                        pointRadius: 0,
+                        tension: 0.4,
+                        fill: false,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: {
+                        duration: 0
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { enabled: false }
+                    },
+                    scales: {
+                        x: {
+                            display: false,
+                        },
+                        y: {
+                            min: 0,
+                            max: 100,
+                            grid: {
+                                color: 'rgba(0, 255, 0, 0.1)',
+                                borderDash: [],
+                            },
+                            ticks: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            });
+
+            class SmoothLine {
+                constructor(startValue) {
+                    this.value = startValue;
+                    this.velocity = 0;
+                }
+
+                next() {
+                    this.velocity += (Math.random() - 0.5) * 4;
+                    this.velocity *= 0.92;
+                    this.velocity += (50 - this.value) * 0.02;
+
+                    this.value += this.velocity;
+
+                    if (this.value < 5) { this.value = 5; this.velocity *= -0.5; }
+                    if (this.value > 95) { this.value = 95; this.velocity *= -0.5; }
+
+                    return this.value;
+                }
+            }
+
+            const lines = [
+                new SmoothLine(50),
+                new SmoothLine(40),
+                new SmoothLine(60)
+            ];
+
+            function updatePerformanceData() {
+                const chart = performanceChart;
+                const dataPointCount = chart.data.labels.length;
+
+                chart.data.datasets.forEach((dataset, index) => {
+                    dataset.data.push(lines[index].next());
+                    if (dataset.data.length > dataPointCount) {
+                        dataset.data.shift();
+                    }
+                });
+
+                chart.update('none');
+            }
+
+            for(let i = 0; i < 100; i++){
+                performanceChart.data.datasets.forEach((dataset, index) => {
+                    dataset.data.push(lines[index].next());
+                });
+            }
+            performanceChart.update();
+
+            setInterval(updatePerformanceData, 20);
+
+        });
+    </script>
+</body>
